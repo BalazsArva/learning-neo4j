@@ -136,5 +136,48 @@ namespace LearningNeo4j
                     return results;
                 });
         }
+
+        public async Task<List<List<string>>> GetFlightsWithTransferCountBetweenAsync(string from, string to, int minNumberOfTransfers, int maxNumberOfTransfers)
+        {
+            const string pathName = "p";
+            const string fromParamName = "from";
+            const string toParamName = "to";
+
+            using var session = driver.AsyncSession();
+
+            return await session.ReadTransactionAsync(
+                async tr =>
+                {
+                    var results = new List<List<string>>();
+
+                    var query =
+                        $"MATCH {pathName}=(start:Station)-[:{GoesToEdgeType}*{minNumberOfTransfers}..{maxNumberOfTransfers}]->(end:Station) " +
+                        $"WHERE start.Name = ${fromParamName} AND end.Name = ${toParamName} " +
+                        $"RETURN {pathName}";
+
+                    var cursor = await tr.RunAsync(
+                        query,
+                        new Dictionary<string, object>
+                        {
+                            [fromParamName] = from,
+                            [toParamName] = to,
+                        });
+
+                    while (await cursor.FetchAsync())
+                    {
+                        var path = (IPath)cursor.Current[pathName];
+                        var stops = new List<string>(path.Nodes.Count);
+
+                        foreach (var node in path.Nodes)
+                        {
+                            stops.Add(node.Properties["Name"].ToString()!);
+                        }
+
+                        results.Add(stops);
+                    }
+
+                    return results;
+                });
+        }
     }
 }

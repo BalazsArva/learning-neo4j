@@ -40,16 +40,11 @@
 
         public async Task<Dictionary<int, List<List<string>>>> GetFlightsWithTransfersAsync(string from, string to, int minTransfers = 0, int maxTransfers = 10)
         {
-            var results = new Dictionary<int, List<List<string>>>();
+            var dbResponse = await registry.GetFlightsWithTransferCountBetweenAsync(from, to, minTransfers, maxTransfers);
 
-            for (var i = minTransfers; i <= maxTransfers; i++)
-            {
-                var resultsWithITransfers = await registry.GetFlightsWithTransfersAsync(from, to, i);
-
-                results[i] = resultsWithITransfers.ToList();
-            }
-
-            return results;
+            return dbResponse
+                .GroupBy(dbResponse => dbResponse.Count)
+                .ToDictionary(x => x.Key, elements => elements.ToList());
         }
     }
 }
