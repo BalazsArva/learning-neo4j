@@ -107,33 +107,34 @@ namespace LearningNeo4j
             var segments = Enumerable.Repeat("(:Station)", numberOfTransfers).Prepend("(start:Station)").Append("(end:Station)");
             var path = string.Join($"-[:{GoesToEdgeType}]->", segments);
 
-            return await session.ReadTransactionAsync(async tr =>
-            {
-                var results = new List<List<string>>();
-
-                var cursor = await tr.RunAsync(
-                    $"MATCH {pathName}={path} WHERE start.Name = ${fromParamName} AND end.Name = ${toParamName} RETURN {pathName}",
-                    new Dictionary<string, object>
-                    {
-                        [fromParamName] = from,
-                        [toParamName] = to,
-                    });
-
-                while (await cursor.FetchAsync())
+            return await session.ReadTransactionAsync(
+                async tr =>
                 {
-                    var path = (IPath)cursor.Current[pathName];
-                    var stops = new List<string>(path.Nodes.Count);
+                    var results = new List<List<string>>();
 
-                    foreach (var node in path.Nodes)
+                    var cursor = await tr.RunAsync(
+                        $"MATCH {pathName}={path} WHERE start.Name = ${fromParamName} AND end.Name = ${toParamName} RETURN {pathName}",
+                        new Dictionary<string, object>
+                        {
+                            [fromParamName] = from,
+                            [toParamName] = to,
+                        });
+
+                    while (await cursor.FetchAsync())
                     {
-                        stops.Add(node.Properties["Name"].ToString()!);
+                        var path = (IPath)cursor.Current[pathName];
+                        var stops = new List<string>(path.Nodes.Count);
+
+                        foreach (var node in path.Nodes)
+                        {
+                            stops.Add(node.Properties["Name"].ToString()!);
+                        }
+
+                        results.Add(stops);
                     }
 
-                    results.Add(stops);
-                }
-
-                return results;
-            });
+                    return results;
+                });
         }
     }
 }
