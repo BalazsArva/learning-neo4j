@@ -151,7 +151,7 @@ namespace LearningNeo4j
                     var results = new List<List<string>>();
 
                     var query =
-                        $"MATCH {pathName}=(start:Station)-[:{GoesToEdgeType}*{minNumberOfTransfers}..{maxNumberOfTransfers}]->(end:Station) " +
+                        $"MATCH {pathName}=(start:Station)-[:{GoesToEdgeType}*{minNumberOfTransfers + 1}..{maxNumberOfTransfers + 1}]->(end:Station) " +
                         $"WHERE start.Name = ${fromParamName} AND end.Name = ${toParamName} " +
                         $"RETURN {pathName}";
 

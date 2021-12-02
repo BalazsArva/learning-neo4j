@@ -82,10 +82,11 @@ foreach (var connection in connections)
 
  */
 
-var results = await flightService.GetFlightsWithTransfersAsync("Budapest", "Paris", 0, 6);
+var results = await flightService.GetFlightsWithTransfersAsync("Budapest", "Vienna", 0, 6);
 foreach (var numberOfTransfers in results.Keys)
 {
-    Console.WriteLine($"Flights with {numberOfTransfers} transfers:");
+    // -2 because the Start and End stations are not transfer stations.
+    Console.WriteLine($"Flights with {numberOfTransfers - 2} transfers:");
     foreach (var flight in results[numberOfTransfers])
     {
         var route = string.Join(" -> ", flight);
