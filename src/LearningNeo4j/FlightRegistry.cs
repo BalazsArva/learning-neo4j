@@ -100,7 +100,7 @@ namespace LearningNeo4j
             const string fromParamName = "from";
             const string toParamName = "to";
 
-            var session = driver.AsyncSession();
+            using var session = driver.AsyncSession();
 
             var segments = Enumerable.Repeat("(:Station)", numberOfTransfers).Prepend("(start:Station)").Append("(end:Station)");
             var path = string.Join("-->", segments);
@@ -119,9 +119,7 @@ namespace LearningNeo4j
 
                 while (await cursor.FetchAsync())
                 {
-                    var record = cursor.Current;
-
-                    var path = (IPath)record[pathName];
+                    var path = (IPath)cursor.Current[pathName];
                     var stops = new List<string>(path.Nodes.Count);
 
                     foreach (var node in path.Nodes)
