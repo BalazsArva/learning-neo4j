@@ -4,6 +4,8 @@ namespace LearningNeo4j
 {
     public class FlightRegistry
     {
+        private const string GoesToEdgeType = "GoesTo";
+
         private readonly IDriver driver;
 
         public FlightRegistry()
@@ -15,7 +17,7 @@ namespace LearningNeo4j
         {
             using var session = driver.AsyncSession();
 
-            await session.WriteTransactionAsync(async tr => await tr.RunAsync("MATCH (n:Station)-[r:GOES_TO]->(m:Station) DELETE r"));
+            await session.WriteTransactionAsync(async tr => await tr.RunAsync($"MATCH (n:Station)-[r:{GoesToEdgeType}]->(m:Station) DELETE r"));
         }
 
         public async Task EraseAllStationsAsync()
@@ -45,9 +47,9 @@ namespace LearningNeo4j
             await session.WriteTransactionAsync(async tr =>
             {
                 var cursor = await tr.RunAsync(
-                    "MATCH (origin:Station), (dest:Station) " +
-                    "WHERE id(origin) = $originId AND id(dest) = $destId " +
-                    "CREATE (origin)-[r:GOES_TO { IsDirect: $isDirect }]->(dest) RETURN type(r)",
+                    $"MATCH (origin:Station), (dest:Station) " +
+                    $"WHERE id(origin) = $originId AND id(dest) = $destId " +
+                    $"CREATE (origin)-[r:{GoesToEdgeType} {{ IsDirect: $isDirect }}]->(dest) RETURN type(r)",
                     new { originId = originId, destId = destinationId, isDirect = isDirect });
 
                 var outputs = await cursor.ToListAsync();
@@ -61,9 +63,9 @@ namespace LearningNeo4j
             var flightsArrivingAtOrigin = await session.ReadTransactionAsync(async tr =>
             {
                 var cursor = await tr.RunAsync(
-                    "MATCH (src:Station)-[:GOES_TO]->(dest:Station) " +
-                    "WHERE id(dest) = $destinationId " +
-                    "RETURN id(src) AS Result",
+                    $"MATCH (src:Station)-[:{GoesToEdgeType}]->(dest:Station) " +
+                    $"WHERE id(dest) = $destinationId " +
+                    $"RETURN id(src) AS Result",
                     new { destinationId = destinationId });
 
                 var outputs = await cursor.ToListAsync();
@@ -81,9 +83,9 @@ namespace LearningNeo4j
             var flightsLeavingFromSource = await session.ReadTransactionAsync(async tr =>
             {
                 var cursor = await tr.RunAsync(
-                    "MATCH (src:Station)-[:GOES_TO]->(dest:Station) " +
-                    "WHERE id(src) = $sourceId " +
-                    "RETURN id(dest) AS Result",
+                    $"MATCH (src:Station)-[:{GoesToEdgeType}]->(dest:Station) " +
+                    $"WHERE id(src) = $sourceId " +
+                    $"RETURN id(dest) AS Result",
                     new { sourceId = sourceId });
 
                 var outputs = await cursor.ToListAsync();
@@ -103,7 +105,7 @@ namespace LearningNeo4j
             using var session = driver.AsyncSession();
 
             var segments = Enumerable.Repeat("(:Station)", numberOfTransfers).Prepend("(start:Station)").Append("(end:Station)");
-            var path = string.Join("-->", segments);
+            var path = string.Join($"-[:{GoesToEdgeType}]->", segments);
 
             return await session.ReadTransactionAsync(async tr =>
             {
