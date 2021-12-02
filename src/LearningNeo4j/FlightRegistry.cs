@@ -94,46 +94,6 @@ namespace LearningNeo4j
             return flightsLeavingFromSource;
         }
 
-        public async Task<Dictionary<int, List<List<string>>>> GetFlightsWithMaximumTransfersAsync(string from, string to, int maxTransfers)
-        {
-            var session = driver.AsyncSession();
-
-            var results = new Dictionary<int, List<List<string>>>();
-            for (var i = 0; i <= maxTransfers; i++)
-            {
-                var segments = Enumerable.Repeat("(:Station)", i).Prepend("(start:Station)").Append("(end:Station)");
-                var path = string.Join("-->", segments);
-
-                results[i] = new List<List<string>>();
-
-                var resultsWithGivenTransferCount = await session.ReadTransactionAsync(async tr =>
-                {
-                    var cursor = await tr.RunAsync(
-                        $"MATCH p={path} WHERE start.Name = $from AND end.Name = $to RETURN p",
-                        new { from = from, to = to });
-
-                    var outputs = await cursor.ToListAsync();
-
-                    foreach (var record in outputs)
-                    {
-                        var path = record["p"] as IPath;
-                        var stops = new List<string>();
-
-                        foreach (var node in path.Nodes)
-                        {
-                            stops.Add(node.Properties["Name"].ToString()!);
-                        }
-
-                        results[i].Add(stops);
-                    }
-
-                    return new List<string>();
-                });
-            }
-
-            return results;
-        }
-
         public async Task<List<List<string>>> GetFlightsWithTransfersAsync(string from, string to, int numberOfTransfers)
         {
             const string pathName = "p";
